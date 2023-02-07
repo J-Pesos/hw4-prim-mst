@@ -1,5 +1,6 @@
 import numpy as np
-import heapq
+import heapq as hq
+import random
 from typing import Union
 
 class Graph:
@@ -41,4 +42,37 @@ class Graph:
         `heapify`, `heappop`, and `heappush` functions.
 
         """
-        self.mst = None
+        
+        # Initialize minimum-spanning tree array of same size as adjacency matrix array.
+        MST = np.zeros(self.adj_mat.shape)
+        # Initialize number of vertices that are in the network.
+        vertices = np.shape(self.adj_mat)[0]
+        # Select a random start vertex in network.
+        start = random.choice(range(0, vertices))
+        # Initialize priority queue.
+        priority_queue = []
+        # Initialize list of visited vertices.
+        visited = []
+
+        # For all other vertices in the network find edges connecting to start vertex, then add weight, starting, and end vertex to priority queue.
+        for vertex in range(vertices): # Loop through all vertex indices.
+            if self.adj_mat[start, vertex] != 0: # If edge exists.
+                priority_queue.append((self.adj_mat[start, vertex], start, vertex)) # Append edge and edge weight to priority queue.
+
+        # Append visited vertex.
+        visited.append(start)
+        # Turn priority queue into heap queue.
+        hq.heapify(priority_queue)
+
+        while len(visited) != vertices: # While length of visited vertices is less than total amount.
+            edge_weight, start, end = hq.heappop(priority_queue) # Pop and return smallest edge and edge weight from heap queue, maintaing heap invariant.
+            if end not in visited: # If end vertex has not yet been visited.
+                MST[start, end] = edge_weight # Add edge and edge weight to MST.
+                MST[end, start] = edge_weight
+                visited.append(end) # Add end vertex to visited.
+                
+                for vertex in range(vertices): # Add new destinations from end vertex into priority queue.
+                    if self.adj_mat[end, vertex] != 0:
+                        hq.heappush(priority_queue, (self.adj_mat[end, vertex], end, vertex))
+                        
+        self.mst = MST
