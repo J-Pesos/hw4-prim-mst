@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from mst import Graph
 from sklearn.metrics import pairwise_distances
+import networkx as nx
 
 
 def check_mst(adj_mat: np.ndarray, 
@@ -35,6 +36,13 @@ def check_mst(adj_mat: np.ndarray,
             total += mst[i, j]
     assert approx_equal(total, expected_weight), 'Proposed MST has incorrect expected weight'
 
+    # Ensure combined edge weights of mst are less than those of original graph.
+    assert np.sum(adj_mat) > np.sum(mst), 'Weight of mst is not less than that of original graph.'
+
+    # Ensure the minimum spanning tree is actually connected.
+    mst_nx = nx.from_numpy_array(mst)
+    assert nx.is_connected(mst_nx) == True, "Not all vertices of minimum spanning tree are connected."
+
 
 def test_mst_small():
     """
@@ -65,10 +73,28 @@ def test_mst_single_cell_data():
     check_mst(g.adj_mat, g.mst, 57.263561605571695)
 
 
-def test_mst_student():
+def test_mst_student(allowed_error: float = 0.000001):
     """
     
     TODO: Write at least one unit test for MST construction.
     
     """
-    pass
+    # Ensure that minimum spanning trees for both small dataset and slingshot example are symmetric.
+    small_path = './data/small.csv'
+    slingshot_path = './data/slingshot_example.txt'
+
+    # Create mst for small dataset.
+    small_g = Graph(small_path)
+    small_g.construct_mst()
+
+    # Load coordinates of single-cell data and calculate pairwise distances to form numpy object.
+    slingshot_coords = np.loadtxt(slingshot_path)
+    slingshot_distances = pairwise_distances(slingshot_coords)
+    
+    # Create mst for single-cell data.
+    slingshot_g = Graph(slingshot_distances)
+    slingshot_g.construct_mst()
+
+    # Check that both MSTs are symmetric.
+    assert np.all(np.abs(small_g.mst - small_g.mst.T) < allowed_error) == True, "The mst for the small dataset is not symmetric."
+    assert np.all(np.abs(slingshot_g.mst - slingshot_g.mst.T) < allowed_error) == True, "The mst for the single-cell dataset is not symmetric."
